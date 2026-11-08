@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Word Scramble: Can You Beat the Clock?</title>
+<style>
+:root{--bg:#fff8ef;--card:#fff;--ink:#2b2118;--mute:#6f6256;--acc:#e8590c;--acc2:#2f9e44;--bad:#c92a2a;--line:#f0dcc4;--tile:#ffe8cc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1712;--card:#2a221b;--ink:#f6ece0;--mute:#b9a994;--acc:#ff922b;--acc2:#69db7c;--bad:#ff8787;--line:#4a3c2f;--tile:#4a3320;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1d1712;--card:#2a221b;--ink:#f6ece0;--mute:#b9a994;--acc:#ff922b;--acc2:#69db7c;--bad:#ff8787;--line:#4a3c2f;--tile:#4a3320;color-scheme:dark}
+*{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS",Verdana,system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:16px}
+.wrap{width:100%;max-width:640px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:22px;text-align:center}
+h1{font-size:clamp(1.6rem,6vw,2.3rem);margin:.2em 0}
+p{line-height:1.5}
+.mute{color:var(--mute)}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:12px 22px;background:var(--acc);color:#fff;cursor:pointer}
+button.alt{background:transparent;color:var(--mute);border:2px solid var(--line)}
+button:disabled{opacity:.5;cursor:default}
+.levels{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+.pill{padding:6px 12px;border-radius:99px;background:var(--tile);font-size:.9rem}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;font-weight:700;flex-wrap:wrap}
+.bar{height:14px;border-radius:99px;background:var(--line);overflow:hidden;margin:6px 0 4px}
+.bar>i{display:block;height:100%;width:100%;background:var(--acc2);transform-origin:left;transition:width 1s linear,background .3s}
+.time{font-size:2rem;font-weight:800}
+.clue{margin:12px 0;font-size:1.05rem}
+.tiles{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.tile{min-width:42px;padding:10px 0;background:var(--tile);border:2px solid var(--line);border-radius:10px;font-size:1.5rem;font-weight:800;text-transform:uppercase}
+input{font:inherit;font-size:1.4rem;text-align:center;text-transform:uppercase;letter-spacing:.15em;width:100%;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+input:focus{outline:3px solid var(--acc);border-color:var(--acc)}
+.row{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.msg{min-height:1.6em;margin-top:10px;font-weight:700}
+.ok{color:var(--acc2)}.no{color:var(--bad)}
+.shake{animation:sh .35s}
+@keyframes sh{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+.big{font-size:3.4rem;font-weight:800;color:var(--acc);margin:0}
+table{width:100%;border-collapse:collapse;margin-top:12px;text-align:left;font-size:.95rem}
+td,th{padding:6px 8px;border-bottom:1px solid var(--line)}
+.scroll{overflow-x:auto}
+footer{text-align:center;color:var(--mute);font-size:1.15rem;font-weight:700;margin:22px 0 8px}
+.tbar{display:flex;justify-content:flex-end;margin-bottom:10px}
+.tbar button{padding:8px 14px;font-size:.9rem}
+@media (prefers-reduced-motion:reduce){.bar>i{transition:none}.shake{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="tbar"><button class="alt" id="th" type="button">🌙 Dark mode</button></div><div id="app"></div><footer>Nannestad High School – Barbara Anna Zielonka</footer></div>
+<script>
+var ALL=[
+{w:"KNIFE",l:1,c:"A sharp tool a chef uses to cut food"},
+{w:"SALAD",l:1,c:"A cold dish of raw vegetables, often a starter"},
+{w:"BREAD",l:1,c:"Baked from flour and water; you make toast from it"},
+{w:"PLATE",l:1,c:"You serve a meal on this"},
+{w:"OVEN",l:1,c:"A hot box in the kitchen for baking"},
+{w:"SOUP",l:1,c:"A hot liquid food, often served as a starter"},
+{w:"FORK",l:1,c:"You eat with this; it has sharp points called prongs"},
+{w:"SPOON",l:1,c:"You use it to eat soup or to stir food"},
+{w:"GRILL",l:1,c:"To cook food over direct heat"},
+{w:"CHEESE",l:1,c:"Made from milk; it goes on top of a pizza"},
+{w:"PASTA",l:1,c:"Italian food such as spaghetti"},
+{w:"FLOUR",l:1,c:"A fine powder made from wheat, used for baking"},
+{w:"SUGAR",l:1,c:"Sweet white powder for cakes and coffee"},
+{w:"APRON",l:1,c:"You wear it over your clothes to keep them clean while cooking"},
+{w:"MENU",l:1,c:"The list of dishes you can order in a restaurant"},
+{w:"WAITER",l:2,c:"The person who brings food to your table"},
+{w:"RECIPE",l:2,c:"Instructions for how to cook a dish"},
+{w:"FREEZER",l:2,c:"Keeps food frozen at very low temperatures"},
+{w:"KITCHEN",l:2,c:"The room where restaurant food is prepared"},
+{w:"CUSTOMER",l:2,c:"A person who buys food or a service"},
+{w:"DESSERT",l:2,c:"The sweet course at the end of a meal"},
+{w:"CASHIER",l:2,c:"The person who takes your payment"},
+{w:"BAKERY",l:2,c:"A place where bread and cakes are made and sold"},
+{w:"SEAFOOD",l:2,c:"Fish and shellfish used as food"},
+{w:"STARTER",l:2,c:"A small dish you eat before the main course"},
+{w:"BEVERAGE",l:2,c:"Another word for a drink"},
+{w:"VEGETABLE",l:2,c:"Carrots, broccoli and onions are examples"},
+{w:"SEASONING",l:2,c:"Salt, pepper and herbs added for flavour"},
+{w:"PORTION",l:2,c:"The amount of food served to one person"},
+{w:"SERVICE",l:2,c:"How well the staff look after guests in a restaurant"},
+{w:"HYGIENE",l:3,c:"Keeping hands and surfaces clean to avoid germs"},
+{w:"PACKAGING",l:3,c:"The wrapping or boxes that protect food products"},
+{w:"INGREDIENT",l:3,c:"One of the foods you mix to make a dish"},
+{w:"PASTEURISE",l:3,c:"Heat milk to kill harmful bacteria"},
+{w:"CONTAMINATION",l:3,c:"When harmful things get into food by mistake"},
+{w:"REFRIGERATOR",l:3,c:"A cold machine that keeps food fresh"},
+{w:"TEMPERATURE",l:3,c:"How hot or cold something is"},
+{w:"ALLERGEN",l:3,c:"A substance in food that can make some people ill"},
+{w:"INSPECTION",l:3,c:"An official check that a kitchen or factory is safe"},
+{w:"SANITISE",l:3,c:"Clean something so that germs are killed"},
+{w:"PRESERVATION",l:3,c:"Keeping food from going bad, for example by canning or salting"},
+{w:"PROCESSING",l:3,c:"Changing raw ingredients into finished food products"},
+{w:"FERMENTATION",l:3,c:"A process using bacteria or yeast, used to make yoghurt and bread"},
+{w:"RESERVATION",l:3,c:"A booking for a table at a restaurant"},
+{w:"PRODUCTION",l:3,c:"Making food in large amounts, for example in a factory"}
+];
+var W=ALL;
+var BASE={1:10,2:20,3:30},NAMES={1:"Level 1 · Easy",2:"Level 2 · Medium",3:"Level 3 · Hard"},TIME=30;
+var app=document.getElementById("app"),i=0,score=0,left=TIME,timer=null,locked=false,res=[],nt=null;
+
+function esc(s){return s.replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function scramble(w){
+  var a=w.split(""),o=w,t=0;
+  do{for(var k=a.length-1;k>0;k--){var j=Math.floor(Math.random()*(k+1)),x=a[k];a[k]=a[j];a[j]=x}t++}while(a.join("")===o&&t<20);
+  return a;
+}
+function start(){
+  i=0;score=0;res=[];clearInterval(timer);clearTimeout(nt);
+  app.innerHTML='<div class="card"><p class="big">🍳</p><h1>Word Scramble</h1><p><b>Can you beat the clock?</b></p>'+
+  '<p>Unscramble the letters to spell the word. You have <b>30 seconds</b> for each word. There are 45 words, 15 at each level, from the restaurant and food processing world.</p>'+
+  '<div class="levels"><span class="pill">Level 1 · Easy · 15 words</span><span class="pill">Level 2 · Medium · 15 words</span><span class="pill">Level 3 · Hard · 15 words</span></div>'+
+  '<p class="mute">Points: 10, 20 or 30 for a correct word, plus up to 15 bonus points for speed. A skipped word gets 0.</p>'+
+  '<p><b>Choose how to play:</b></p><div class="row"><button id="go0">All 45 words</button><button class="alt" id="go1">Level 1 · 15 words</button><button class="alt" id="go2">Level 2 · 15 words</button><button class="alt" id="go3">Level 3 · 15 words</button></div></div>';
+  [0,1,2,3].forEach(function(n){document.getElementById("go"+n).onclick=function(){W=n?ALL.filter(function(q){return q.l===n}):ALL;next()}});
+}
+function next(){
+  if(i>=W.length){return end()}
+  var q=W[i];locked=false;left=TIME;q.s=scramble(q.w);
+  var showNew=(i===0||W[i-1].l!==q.l);
+  app.innerHTML='<div class="card"><div class="top"><span>'+NAMES[q.l]+'</span><span>Word '+(i+1)+' / '+W.length+'</span><span>⭐ '+score+'</span></div>'+
+  '<div class="time" id="t" aria-live="off">'+TIME+'</div><div class="bar"><i id="b"></i></div>'+
+  '<p class="clue"><b>Clue:</b> '+esc(q.c)+'</p>'+
+  '<p class="mute" style="margin:0">'+q.w.length+' letters · unscramble these:</p>'+
+  '<div class="tiles" id="tiles">'+q.s.map(function(c){return'<span class="tile">'+c+'</span>'}).join("")+'</div>'+
+  '<input id="in" type="text" maxlength="'+q.w.length+'" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Type the word" aria-label="Your answer">'+
+  '<div class="row"><button id="ok">Check</button><button class="alt" id="sh">Shuffle</button><button class="alt" id="sk">Skip</button><button class="alt" id="lv">Change level</button></div>'+
+  '<div class="msg" id="m" role="status"></div></div>';
+  var inp=document.getElementById("in");inp.focus();
+  document.getElementById("ok").onclick=check;
+  inp.onkeydown=function(e){if(e.key==="Enter")check()};
+  document.getElementById("sh").onclick=function(){q.s=scramble(q.w);document.getElementById("tiles").innerHTML=q.s.map(function(c){return'<span class="tile">'+c+'</span>'}).join("")};
+  document.getElementById("sk").onclick=function(){finish(false,"skip")};
+  document.getElementById("lv").onclick=start;
+  clearInterval(timer);
+  timer=setInterval(tick,1000);
+  setTimeout(function(){var b=document.getElementById("b");if(b)b.style.width=((left-1)/TIME*100)+"%"},30);
+}
+function tick(){
+  if(locked)return;
+  left--;
+  var t=document.getElementById("t"),b=document.getElementById("b");
+  if(t)t.textContent=left;
+  if(b){b.style.width=((left-1)/TIME*100)+"%";if(left<=10)b.style.background="var(--bad)"}
+  if(left<=0)finish(false,"time");
+}
+function check(){
+  if(locked)return;
+  var inp=document.getElementById("in"),v=inp.value.trim().toUpperCase();
+  if(!v)return;
+  if(v===W[i].w)finish(true);
+  else{var m=document.getElementById("m");m.className="msg no";m.textContent="Not quite. Try again!";inp.classList.remove("shake");void inp.offsetWidth;inp.classList.add("shake");inp.select()}
+}
+function finish(ok,why){
+  if(locked)return;locked=true;clearInterval(timer);
+  var q=W[i],pts=0,m=document.getElementById("m");
+  if(ok){pts=BASE[q.l]+Math.floor(left/2);score+=pts;m.className="msg ok";m.textContent="Correct! +"+pts+" points"}
+  else{m.className="msg no";m.textContent=(why==="time"?"Time’s up! ":"Skipped. ")+"The word was "+q.w+"."}
+  res.push({w:q.w,l:q.l,ok:ok,p:pts});
+  document.getElementById("ok").disabled=true;document.getElementById("sh").disabled=true;document.getElementById("sk").disabled=true;
+  document.getElementById("in").disabled=true;
+  nt=setTimeout(function(){i++;next()},ok?1300:2200);
+}
+function end(){
+  var max=0,right=0,per={1:0,2:0,3:0};
+  res.forEach(function(r){if(r.ok){right++;per[r.l]+=r.p}});
+  W.forEach(function(q){max+=BASE[q.l]+15});
+  var pct=score/max,msg=pct>.7?"Kitchen legend! You are ready for any restaurant.":pct>.4?"Great work, chef! Your vocabulary is cooking.":"Good start! Play again and beat your score.";
+  app.innerHTML='<div class="card"><p class="big">🏆</p><h1>Game over!</h1><p class="big" style="font-size:3rem">'+score+' points</p>'+
+  '<p>You unscrambled <b>'+right+' of '+W.length+'</b> words. Best possible score: '+max+'.</p><p><b>'+msg+'</b></p>'+
+  '<div class="levels">'+[1,2,3].filter(function(l){return W.some(function(q){return q.l===l})}).map(function(l){return'<span class="pill">Level '+l+': '+per[l]+' pts</span>'}).join("")+'</div>'+
+  '<div class="scroll"><table><tr><th>Word</th><th>Level</th><th>Result</th><th>Points</th></tr>'+
+  res.map(function(r){return'<tr><td>'+r.w+'</td><td>'+r.l+'</td><td>'+(r.ok?"✅":"❌")+'</td><td>'+r.p+'</td></tr>'}).join("")+'</table></div>'+
+  '<div class="row"><button id="again">Play again</button></div></div>';
+  document.getElementById("again").onclick=start;
+}
+var root=document.documentElement,th=document.getElementById("th");
+function isDark(){var t=root.getAttribute("data-theme");return t?t==="dark":window.matchMedia("(prefers-color-scheme:dark)").matches}
+function setLabel(){th.textContent=isDark()?"☀️ Light mode":"🌙 Dark mode"}
+th.onclick=function(){var n=isDark()?"light":"dark";root.setAttribute("data-theme",n);try{localStorage.setItem("ws-theme",n)}catch(e){}setLabel()};
+try{var saved=localStorage.getItem("ws-theme");if(saved)root.setAttribute("data-theme",saved)}catch(e){}
+setLabel();
+start();
+</script>
+</body>
+</html>
